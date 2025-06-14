@@ -8,12 +8,29 @@ class Move(IntEnum):
     LEFT = 2
     RIGHT = 3
 
+def slide_and_merge_row(row: List[int]) -> Tuple[List[int], int]:
+    non_zero = [x for x in row if x != 0]
+    merged = []
+    score = 0
+    skip = False
+    for i in range(len(non_zero)):
+        if skip:
+            skip = False
+            continue
+        if i + 1 < len(non_zero) and non_zero[i] == non_zero[i + 1]:
+            val = non_zero[i] * 2
+            merged.append(val)
+            score += val
+            skip = True
+        else:
+            merged.append(non_zero[i])
+    while len(merged) < 4:
+        merged.append(0)
+    return merged, score
+
 class Board:
     def __init__(self, grid: Optional[Tuple[int, ...]] = None):
         self.grid = tuple(grid) if grid else tuple([0] * 16)
-
-    def __getitem__(self, idx: int) -> int:
-        return self.grid[idx]
 
     def get_empty_cells(self) -> List[int]:
         return [i for i, val in enumerate(self.grid) if val == 0]
@@ -27,7 +44,3 @@ class Board:
         new_grid = list(self.grid)
         new_grid[idx] = val
         return Board(tuple(new_grid))
-
-    def __repr__(self) -> str:
-        rows = [self.grid[i*4:(i+1)*4] for i in range(4)]
-        return "\n".join(str(r) for r in rows)
