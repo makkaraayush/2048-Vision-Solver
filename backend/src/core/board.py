@@ -9,6 +9,7 @@ class Move(IntEnum):
     RIGHT = 3
 
 def slide_and_merge_row(row: List[int]) -> Tuple[List[int], int]:
+    # Non-cascading merge: [4, 4, 4, 0] must become [8, 4, 0, 0]
     non_zero = [x for x in row if x != 0]
     merged = []
     score = 0
