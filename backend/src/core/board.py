@@ -1,3 +1,4 @@
+import random
 from enum import IntEnum
 from typing import Tuple, List, Optional
 
@@ -13,6 +14,9 @@ class Board:
 
     def __getitem__(self, idx: int) -> int:
         return self.grid[idx]
+
+    def get_empty_cells(self) -> List[int]:
+        return [i for i, val in enumerate(self.grid) if val == 0]
 
     def __repr__(self) -> str:
         rows = [self.grid[i*4:(i+1)*4] for i in range(4)]
