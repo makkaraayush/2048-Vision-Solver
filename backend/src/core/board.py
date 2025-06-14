@@ -10,3 +10,10 @@ class Move(IntEnum):
 class Board:
     def __init__(self, grid: Optional[Tuple[int, ...]] = None):
         self.grid = tuple(grid) if grid else tuple([0] * 16)
+
+    def __getitem__(self, idx: int) -> int:
+        return self.grid[idx]
+
+    def __repr__(self) -> str:
+        rows = [self.grid[i*4:(i+1)*4] for i in range(4)]
+        return "\n".join(str(r) for r in rows)
