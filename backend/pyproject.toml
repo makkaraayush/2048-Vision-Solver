@@ -1,0 +1,8 @@
+[project]
+name = "coded3mon-2048"
+version = "0.1.0"
+description = "2048 Vision Solver"
+authors = [{ name = "Aayush Makkar", email = "lalitmakkar1623@gmail.com" }]
+dependencies = [
+    "numpy>=1.26.0",
+]
