@@ -18,6 +18,16 @@ class Board:
     def get_empty_cells(self) -> List[int]:
         return [i for i, val in enumerate(self.grid) if val == 0]
 
+    def spawn_tile(self) -> 'Board':
+        empty = self.get_empty_cells()
+        if not empty:
+            return self
+        idx = random.choice(empty)
+        val = 2 if random.random() < 0.9 else 4
+        new_grid = list(self.grid)
+        new_grid[idx] = val
+        return Board(tuple(new_grid))
+
     def __repr__(self) -> str:
         rows = [self.grid[i*4:(i+1)*4] for i in range(4)]
         return "\n".join(str(r) for r in rows)
