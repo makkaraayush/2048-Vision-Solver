@@ -1,0 +1,1 @@
+Simulated 20 games: 18 reached 1024, 7 reached 2048. Max score: 36,440.
