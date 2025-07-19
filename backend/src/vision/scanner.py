@@ -8,5 +8,4 @@ class GameScanner:
         
     def capture_screen(self) -> np.ndarray:
         monitor = self.sct.monitors[1]
-        screenshot = self.sct.grab(monitor)
-        return np.array(screenshot)
+        return np.array(self.sct.grab(monitor))
