@@ -2,6 +2,17 @@ import mss
 import numpy as np
 import cv2
 
-def crop_inner_tile(cell_crop: np.ndarray) -> np.ndarray:
-    h, w = cell_crop.shape[:2]
-    return cell_crop[int(h*0.1):int(h*0.9), int(w*0.1):int(w*0.9)]
+TILE_COLORS = {
+    0: (205, 193, 180),
+    2: (238, 228, 218),
+    4: (237, 224, 200),
+    8: (242, 177, 121),
+    16: (245, 149, 99),
+    32: (246, 124, 95),
+    64: (246, 94, 59),
+    128: (237, 207, 114),
+    256: (237, 204, 97),
+    512: (237, 200, 80),
+    1024: (237, 197, 63),
+    2048: (237, 194, 46),
+}
