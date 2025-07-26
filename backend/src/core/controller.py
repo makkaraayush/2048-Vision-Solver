@@ -16,6 +16,8 @@ class GameController:
         }
         key = key_map.get(move)
         if key:
-            self.keyboard.press(key)
-            time.sleep(self.key_delay)
-            self.keyboard.release(key)
+            try:
+                self.keyboard.press(key)
+                time.sleep(self.key_delay)
+            finally:
+                self.keyboard.release(key)
