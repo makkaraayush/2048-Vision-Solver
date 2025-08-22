@@ -1,10 +1,10 @@
-# 2048 AI Solver
+# CodeD3mon 2048 AI Solver
 
-An automated computer vision + Expectimax AI solver for 2048.
+An automated real-time Computer Vision & Expectimax AI solver for 2048.
 
-## How it works
-- Evaluates board moves using a recursive Expectimax decision tree
-- Prioritizes placing high value tiles in the corner using a snake monotonicity pattern
-- Penalizes large gaps between adjacent tiles
+- Real-time OpenCV screen detection
+- Fast Expectimax search with iterative deepening
+- FastAPI telemetry backend with WebSockets
+- Next.js cyberpunk live HUD
 
-Author: Aayush Makkar
+Author: Aayush Makkar (CodeD3mon)
