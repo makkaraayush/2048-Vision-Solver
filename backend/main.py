@@ -1,25 +1,186 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.middleware.cors import CORSMiddleware
+import time
+import logging
+import uvicorn
+from fastapi import FastAPI, WebSocket
 import asyncio
-import json
+from src.vision.scanner import BoardScanner
+from src.ai.expectimax import ExpectimaxSolver
+from src.core.board import Board
+from src.core.controller import GameController
+from train import GeneticTrainer, calculate_level
+import src.ai.heuristics as heur
+from pynput import keyboard
+import threading
+import os
 
-app = FastAPI(title="CodeD3mon 2048 Solver")
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
+logger = logging.getLogger(__name__)
 
-active_connections = set()
+app = FastAPI(title="CodeD3mon-2048 API")
+connected_clients = set()
+main_loop: asyncio.AbstractEventLoop = None
+
+# Global state
+saved_model = heur.load_saved_weights()
+state = {
+    "is_running": False,          # Scanning and calculating (Hint Mode)
+    "automation_allowed": False,   # UI Toggle for safety
+    "auto_play_active": False,     # Hotkey toggle for pressing keys
+    "last_stats": {},
+    "current_grid": [],
+    "training_active": False,
+    "training_stats": {
+        "generation": saved_model.get("generation", 0),
+        "level": calculate_level(saved_model.get("best_max_tile", 0)),
+        "best_max_tile": saved_model.get("best_max_tile", 0),
+        "best_score": saved_model.get("best_score", 0),
+        "current_max_tile": 0,
+        "current_score": 0,
+        "games_played": saved_model.get("games_played", 0),
+        "status": "Ready to Train"
+    }
+}
+
+trainer_instance: GeneticTrainer = None
+trainer_thread: threading.Thread = None
+
+def on_press(key):
+    try:
+        if key == keyboard.Key.f9:
+            if state["automation_allowed"]:
+                state["auto_play_active"] = not state["auto_play_active"]
+                logger.info(f"Auto-Play Active: {state['auto_play_active']}")
+                trigger_broadcast()
+            else:
+                logger.warning("F9 pressed but Automation is not enabled in the UI!")
+    except Exception:
+        pass
+
+# Start the global hotkey listener
+listener = keyboard.Listener(on_press=on_press)
+listener.start()
+
+async def broadcast_state():
+    if not connected_clients:
+        return
+    data = state
+    for client in list(connected_clients):
+        try:
+            await client.send_json(data)
+        except:
+            pass
+
+def trigger_broadcast():
+    if main_loop and main_loop.is_running():
+        asyncio.run_coroutine_threadsafe(broadcast_state(), main_loop)
+
+def on_training_update(stats: dict):
+    state["training_stats"].update(stats)
+    trigger_broadcast()
+
+def start_training_thread():
+    global trainer_instance, trainer_thread
+    trainer_instance = GeneticTrainer(callback=on_training_update)
+    state["training_active"] = True
+    trigger_broadcast()
+    trainer_instance.run()
+    state["training_active"] = False
+    state["training_stats"]["status"] = "Training Paused"
+    trigger_broadcast()
+
+def stop_training():
+    global trainer_instance
+    if trainer_instance:
+        trainer_instance.stop()
+    state["training_active"] = False
+    state["training_stats"]["status"] = "Stopping..."
+    trigger_broadcast()
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
-    active_connections.add(websocket)
+    connected_clients.add(websocket)
     try:
+        # Send initial state immediately
+        await websocket.send_json(state)
         while True:
             data = await websocket.receive_text()
-    except WebSocketDisconnect:
-        active_connections.remove(websocket)
+            if data == "toggle":
+                state["is_running"] = not state["is_running"]
+                logger.info(f"Scanner Running: {state['is_running']}")
+                await broadcast_state()
+            elif data == "toggle_automation":
+                state["automation_allowed"] = not state["automation_allowed"]
+                if not state["automation_allowed"]:
+                    state["auto_play_active"] = False
+                logger.info(f"Automation Allowed: {state['automation_allowed']}")
+                await broadcast_state()
+            elif data == "toggle_training":
+                global trainer_thread
+                if not state["training_active"]:
+                    logger.info("Starting background evolutionary training...")
+                    trainer_thread = threading.Thread(target=start_training_thread, daemon=True)
+                    trainer_thread.start()
+                else:
+                    logger.info("Stopping background evolutionary training...")
+                    stop_training()
+                await broadcast_state()
+            elif data == "shutdown":
+                logger.info("Shutdown requested via Web UI. Exiting...")
+                stop_training()
+                os._exit(0)
+    except Exception:
+        pass
+    finally:
+        connected_clients.discard(websocket)
+
+def solver_loop():
+    scanner = BoardScanner()
+    solver = ExpectimaxSolver()
+    controller = GameController(delay=0.1)
+
+    logger.info("Solver thread started. Use Web UI to start scanner and allow automation.")
+    
+    while True:
+        if state["is_running"]:
+            try:
+                grid = scanner.extract_grid()
+                state["current_grid"] = grid
+                
+                board = Board(grid=grid)
+                if board.is_game_over():
+                    logger.info("Game Over detected!")
+                    state["is_running"] = False
+                    state["auto_play_active"] = False
+                    trigger_broadcast()
+                    continue
+                    
+                best_move, stats = solver.get_best_move(board)
+                
+                if best_move is not None:
+                    state["last_stats"] = stats
+                    
+                    if state["automation_allowed"] and state["auto_play_active"]:
+                        controller.execute_move(best_move)
+                        # Wait for sliding animation before next screenshot
+                        time.sleep(0.15)
+                        
+                    trigger_broadcast()
+                else:
+                    pass
+                    
+            except Exception as e:
+                logger.error(f"Error in solver loop: {e}")
+                time.sleep(1)
+        else:
+            time.sleep(0.1)
+
+@app.on_event("startup")
+async def startup_event():
+    global main_loop
+    main_loop = asyncio.get_running_loop()
+    t = threading.Thread(target=solver_loop, daemon=True)
+    t.start()
+
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)
