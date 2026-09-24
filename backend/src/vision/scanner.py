@@ -2,17 +2,8 @@ import mss
 import numpy as np
 import cv2
 
-TILE_COLORS = {
-    0: (205, 193, 180),
-    2: (238, 228, 218),
-    4: (237, 224, 200),
-    8: (242, 177, 121),
-    16: (245, 149, 99),
-    32: (246, 124, 95),
-    64: (246, 94, 59),
-    128: (237, 207, 114),
-    256: (237, 204, 97),
-    512: (237, 200, 80),
-    1024: (237, 197, 63),
-    2048: (237, 194, 46),
-}
+def sample_top_center(crop: np.ndarray):
+    h, w = crop.shape[:2]
+    patch = crop[int(h*0.12):int(h*0.28), int(w*0.35):int(w*0.65)]
+    avg = np.mean(patch, axis=(0, 1))
+    return int(avg[2]), int(avg[1]), int(avg[0])
