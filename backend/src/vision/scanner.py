@@ -1,9 +1,9 @@
-import mss
-import numpy as np
 import cv2
+import numpy as np
 
-def sample_top_center(crop: np.ndarray):
-    h, w = crop.shape[:2]
-    patch = crop[int(h*0.12):int(h*0.28), int(w*0.35):int(w*0.65)]
-    avg = np.mean(patch, axis=(0, 1))
-    return int(avg[2]), int(avg[1]), int(avg[0])
+def classify_yellow_digit(tile_bgr: np.ndarray) -> int:
+    h, w = tile_bgr.shape[:2]
+    center = tile_bgr[int(h*0.2):int(h*0.8), int(w*0.2):int(w*0.8)]
+    gray = cv2.cvtColor(center, cv2.COLOR_BGR2GRAY)
+    _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    return thresh
