@@ -9,6 +9,11 @@ def main():
     
     # 1. Start Frontend
     frontend_dir = os.path.join(os.getcwd(), 'frontend')
+    next_bin = os.path.join(frontend_dir, 'node_modules', '.bin', 'next.cmd' if os.name == 'nt' else 'next')
+    if not os.path.exists(next_bin):
+        print("📦 Installing frontend dependencies (npm install)...")
+        subprocess.run(['npm', 'install'], cwd=frontend_dir, shell=True, check=True)
+
     frontend_process = subprocess.Popen(
         ['npm', 'run', 'dev'], 
         cwd=frontend_dir,
@@ -18,7 +23,9 @@ def main():
     # 2. Start Backend
     backend_dir = os.path.join(os.getcwd(), 'backend')
     python_exe = os.path.join(backend_dir, '.venv', 'Scripts', 'python.exe')
-    
+    if not os.path.exists(python_exe):
+        python_exe = sys.executable
+        
     backend_process = subprocess.Popen(
         [python_exe, 'main.py'],
         cwd=backend_dir,

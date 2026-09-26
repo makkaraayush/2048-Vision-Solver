@@ -13,10 +13,20 @@ from pynput import keyboard
 import threading
 import os
 
+from contextlib import asynccontextmanager
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="CodeD3mon-2048 API")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global main_loop
+    main_loop = asyncio.get_running_loop()
+    t = threading.Thread(target=solver_loop, daemon=True)
+    t.start()
+    yield
+
+app = FastAPI(title="CodeD3mon-2048 API", lifespan=lifespan)
 connected_clients = set()
 main_loop: asyncio.AbstractEventLoop = None
 
@@ -174,13 +184,5 @@ def solver_loop():
                 time.sleep(1)
         else:
             time.sleep(0.1)
-
-@app.on_event("startup")
-async def startup_event():
-    global main_loop
-    main_loop = asyncio.get_running_loop()
-    t = threading.Thread(target=solver_loop, daemon=True)
-    t.start()
-
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=False)
