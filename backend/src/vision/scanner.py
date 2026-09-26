@@ -128,56 +128,126 @@ class BoardScanner:
                 best_val = val
                 
         # Yellow family disambiguation (128, 256, 512, 1024, 2048)
-        # In 2048, yellow tiles share nearly identical hues.
-        # We use Otsu adaptive thresholding on the center region to extract the digit shapes:
-        # '1' (in 128 / 1024) is a narrow stroke with width/height aspect ratio < 0.52.
-        # '2' and '5' (in 256 / 512 / 2048) are wide digits with width/height aspect ratio >= 0.52.
+        # In 2048, yellow/gold tiles share similar hues.
+        # We use high-contrast Blue-channel white text extraction combined with
+        # a foolproof multi-feature voting ensemble:
+        # 1. Topology / Hole count (RETR_CCOMP):
+        #    '128' has digit '8' (2 loops -> 2 holes)
+        #    '256' has digit '6' (1 loop -> 1 hole)
+        #    '512' has digits '5','1','2' (0 loops -> 0 holes)
+        #    '2048' has digits '0' and '8' (at least 3 holes)
+        #    '1024' has digit '0' (at most 2 holes)
+        # 2. Left vs Right Ink balance:
+        #    In '128', left digit '1' is light while right digit '8' is dense (ink_ratio <= 0.77).
+        #    In '256', left digit '2' and right digit '6' have equal weight (ink_ratio >= 0.82).
+        # 3. Digit 0 vs Digit 1 width ratio:
+        #    In '128', '1' is narrower than '2' (w0/w1 < 0.88).
+        #    In '256', '2' has same width as '5' (w0/w1 >= 0.95).
+        # 4. Calibrated background color evidence.
         if best_val in (128, 256, 512, 1024, 2048):
-            b, g, r = bg_color[0], bg_color[1], bg_color[2]
+            b, g, r = float(bg_color[0]), float(bg_color[1]), float(bg_color[2])
             hsv_patch = cv2.cvtColor(np.uint8([[bg_color]]), cv2.COLOR_BGR2HSV)[0][0]
             sat = int(hsv_patch[1])
             
-            # Crop the central region containing the number text
-            roi = cell_img[int(h * 0.25):int(h * 0.75), int(w * 0.12):int(w * 0.88)]
-            gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+            # White text has Blue >= 235, while yellow bg has Blue <= 120.
+            # Dynamic blue threshold isolates white text with zero background bleed:
+            thresh_val = max(130.0, b + (242.0 - b) * 0.35)
+            roi = cell_img[int(h * 0.22):int(h * 0.78), int(w * 0.08):int(w * 0.92)]
+            mask = (roi[:, :, 0] > thresh_val).astype(np.uint8) * 255
             
-            # Otsu thresholding automatically separates foreground white text from the yellow tile background
-            _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-            if np.mean(thresh) > 128:
-                thresh = cv2.bitwise_not(thresh)
-                
-            cnts, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            digit_cnts = sorted([c for c in cnts if cv2.contourArea(c) > 15], key=lambda c: cv2.boundingRect(c)[0])
+            # Count loops/holes in text using 2-level contour hierarchy (RETR_CCOMP)
+            cnts, hierarchy = cv2.findContours(mask, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+            min_hole = max(6.0, (h * w) * 0.0012)
+            holes = 0
+            external_cnts = []
+            if hierarchy is not None:
+                for i, h_info in enumerate(hierarchy[0]):
+                    area = cv2.contourArea(cnts[i])
+                    if h_info[3] != -1:  # Child contour is a hole
+                        if area >= min_hole:
+                            holes += 1
+                    else:  # External contour is a digit
+                        if area >= max(12.0, (h * w) * 0.002):
+                            external_cnts.append(cnts[i])
+                            
+            digit_cnts = sorted(external_cnts, key=lambda c: cv2.boundingRect(c)[0])
             num_digits = len(digit_cnts)
+            boxes = [cv2.boundingRect(c) for c in digit_cnts]
             
-            if digit_cnts:
-                first_box = cv2.boundingRect(digit_cnts[0])
-                first_ratio = first_box[2] / float(first_box[3])
+            first_ratio = (boxes[0][2] / float(boxes[0][3])) if len(boxes) >= 1 else 0.55
+            w0_w1 = (boxes[0][2] / float(boxes[1][2])) if len(boxes) >= 2 else 1.0
+            
+            # Compute Left vs Right ink ratio across text bounding box
+            if len(boxes) > 0:
+                x_min = min(bx[0] for bx in boxes)
+                x_max = max(bx[0] + bx[2] for bx in boxes)
+                y_min = min(bx[1] for bx in boxes)
+                y_max = max(bx[1] + bx[3] for bx in boxes)
+                text_crop = mask[y_min:y_max, x_min:x_max]
+                mid_x = text_crop.shape[1] // 2
+                left_ink = np.count_nonzero(text_crop[:, :mid_x])
+                right_ink = np.count_nonzero(text_crop[:, mid_x:])
+                ink_ratio = left_ink / float(max(right_ink, 1))
             else:
-                first_ratio = 0.5
+                ink_ratio = 0.8
                 
-            # If 4 digits: 1024 (starts with '1') vs 2048 (starts with '2')
-            if num_digits == 4:
-                return 1024 if first_ratio < 0.52 else 2048
-            # If 2 or 3 digits: 128 (starts with '1') vs 256 (starts with '2') vs 512 (starts with '5')
-            elif num_digits >= 2:
-                if first_ratio < 0.52:
-                    return 128
-                elif b < 88 or sat > 162:
-                    return 512
-                else:
-                    return 256
-            else:
-                # Secondary fallback using calibrated color thresholds
-                if b >= 106 and sat <= 141:
-                    return 128
-                elif b >= 89 and sat <= 159:
-                    return 256
-                elif b >= 71 and sat <= 178:
-                    return 512
-                elif b >= 53 and sat <= 197:
+            # Disambiguate 1024 vs 2048:
+            is_4_digit = (num_digits >= 4) or (best_val in (1024, 2048) and b <= 74)
+            if is_4_digit or (b <= 68 and sat >= 188):
+                if holes >= 3:
+                    return 2048
+                elif holes <= 2 and (first_ratio < 0.52 or w0_w1 < 0.85 or b >= 55):
+                    return 1024
+                elif first_ratio < 0.52 or w0_w1 < 0.85:
+                    return 1024
+                elif b >= 55:
                     return 1024
                 else:
                     return 2048
+                    
+            # 512 has B ~ 80, sat ~ 170, and 0 holes ('5','1','2' have no loops)
+            is_512_color = (b <= 88 or sat >= 165 or best_val == 512)
+            if is_512_color and holes == 0:
+                return 512
+                
+            # Core Disambiguation: 128 vs 256
+            # Weighted multi-feature voting:
+            v_128 = 0
+            v_256 = 0
+            
+            # 1. Topology / Holes: 128 has '8' (2 holes), 256 has '6' (1 hole)
+            if holes >= 2:
+                v_128 += 5
+            elif holes == 1:
+                v_256 += 5
+            elif holes == 0:
+                if b <= 88:
+                    return 512
+                v_256 += 1
+                
+            # 2. Ink distribution (right-heavy in 128 due to '8')
+            if ink_ratio <= 0.77:
+                v_128 += 3
+            elif ink_ratio >= 0.82:
+                v_256 += 3
+                
+            # 3. Digit 0 vs Digit 1 width ratio
+            if w0_w1 < 0.88 or first_ratio < 0.48:
+                v_128 += 3
+            elif w0_w1 >= 0.95 and first_ratio >= 0.58:
+                v_256 += 3
+                
+            # 4. Color sampling evidence
+            if best_val == 128 or b >= 106:
+                v_128 += 2
+            elif best_val == 256 or b <= 101:
+                v_256 += 2
+                
+            if v_128 > v_256:
+                return 128
+            elif v_256 > v_128:
+                return 256
+            else:
+                return 128 if b >= 105.5 else 256
                 
         return 0 if best_val == -1 else best_val
