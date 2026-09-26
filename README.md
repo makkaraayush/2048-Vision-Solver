@@ -30,14 +30,17 @@ Initially, I tried using Tesseract OCR to read the numbers off each tile. It was
 - Instead of reading text, it isolates a safe patch in the top-center of each cell ($y \in [16\%, 28\%], x \in [35\%, 65\%]$) that avoids text and rounded borders.
 - This dropped perception latency from **~300ms down to ~1.8ms per frame** while achieving 100% accuracy.
 
-### 2. Debugging the 128 vs 256 Yellow Color Collision
-During testing, I noticed tile 256 was occasionally misclassified as 128:
-- In standard 2048 CSS, tile 128 (`#edcf72`) and tile 256 (`#edcc61`) share nearly identical yellow hues (Hue ~23 in HSV).
-- Furthermore, CSS applies an inset border glow (`inset 0 0 0 1px rgba(255, 255, 255, 0.19)`) to higher tiles. When sampling near tile margins, this white tint raised the blue channel from 97 towards 114, tricking a naive Euclidean distance check into picking 128.
+### 2. Debugging the 128 vs 256 vs 512 Yellow Family Ambiguity
+In 2048, yellow tiles (128, 256, 512, 1024, 2048) share very close background hues ($H \approx 23$). Subtle differences in screen gamma, OS scaling, or font smoothing can easily trick simple Euclidean color distance checks.
 
-**The Fix**: I combined two complementary signals:
-1. Calibrated HSV Saturation and BGR Blue channel midpoints (Saturation: 132 for 128 vs 151 for 256).
-2. Central text contour inspection to verify character counts (3 digits vs 4 digits) and contour aspect ratios. This made detection robust against screen gamma and browser color rendering.
+**The Solution**: I developed a multi-stage computer vision pipeline:
+1. **High-Contrast Blue Channel Extraction**: Yellow background has very low blue ($B \in [45, 115]$), while white text (`#f9f6f2`) has maximum blue ($B \ge 240$). Thresholding on the Blue channel yields over **125+ units of contrast** (3x greater than grayscale), cleanly isolating white text digits without background bleed.
+2. **Topological Hole Hierarchy (`cv2.RETR_CCOMP`)**:
+   - `128` contains the digit `'8'`, which mathematically has **2 closed loops (2 holes)**.
+   - `256` contains the digit `'6'`, which has **1 closed loop (1 hole)**.
+   - `512` contains `'5'`, `'1'`, `'2'`, which has **0 closed loops (0 holes)**.
+   - `2048` contains `'0'` and `'8'` ($\ge 3$ holes), while `1024` has at most 2 holes.
+3. **Ink Distribution Balance**: Digit `'1'` is slender while `'8'` is dense, creating a distinct right-skewed horizontal center-of-mass ($\text{left/right ink ratio} \le 0.77$) that distinguishes `128` even under low-resolution scaling.
 
 ### 3. Tree Explosion & Immutable 1D Bitwise Caching
 At depth 4 or 5, an Expectimax search tree explodes exponentially because every maximizing move is followed by a chance node branching across all remaining empty cells with both 2s and 4s.
@@ -259,5 +262,7 @@ npm run dev
 
 Built with curiosity and coffee by **Aayush Makkar** (Online Handle: **CodeD3mon**).  
 Developed as an independent research & engineering project exploring Computer Vision and Stochastic Game AI.
+
+> **Design & Tooling Note**: The core algorithmic architecture—including the OpenCV screen perception pipeline, topological contour classifier, recursive Expectimax search tree, and headless genetic algorithm—was engineered and implemented from scratch in Python. Modern generative AI design tools were leveraged as a productivity accelerator to refine the Next.js visual dashboard layout and CSS aesthetics.
 
 This project is licensed under the [MIT License](LICENSE). Feel free to fork, experiment, and build upon it!
