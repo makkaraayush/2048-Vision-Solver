@@ -4,6 +4,14 @@ import webbrowser
 import os
 import sys
 
+# Configure stdout and stderr for UTF-8 on Windows
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        pass
+
 def main():
     print("🚀 Booting up CodeD3mon-2048...")
     
