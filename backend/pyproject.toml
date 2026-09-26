@@ -2,7 +2,7 @@
 name = "2048-vision-solver"
 version = "0.1.0"
 description = "High-performance CV-based 2048 Expectimax Solver"
-authors = ["Your Name <your.email@example.com>"]
+authors = ["Aayush Makkar <lalitmakkar1623@gmail.com>"]
 readme = "README.md"
 packages = [{include = "src"}]
 

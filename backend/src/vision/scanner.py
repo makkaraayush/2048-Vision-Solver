@@ -205,49 +205,59 @@ class BoardScanner:
                 else:
                     return 2048
                     
-            # 512 has B ~ 80, sat ~ 170, and 0 holes ('5','1','2' have no loops)
-            is_512_color = (b <= 88 or sat >= 165 or best_val == 512)
-            if is_512_color and holes == 0:
-                return 512
-                
-            # Core Disambiguation: 128 vs 256
-            # Weighted multi-feature voting:
-            v_128 = 0
-            v_256 = 0
+            # Unified 3-way voting for 128 vs 256 vs 512:
+            # 128: digits '1','2','8' -> '8' has 2 holes; digit 0 is '1' (slender); right-heavy ink
+            # 256: digits '2','5','6' -> '6' has 1 hole; no '1' (all digits wide); balanced ink
+            # 512: digits '5','1','2' -> 0 holes; digit 1 is '1' (slender); balanced ink
+            v_128, v_256, v_512 = 0, 0, 0
             
-            # 1. Topology / Holes: 128 has '8' (2 holes), 256 has '6' (1 hole)
+            # 1. Topology / Holes:
             if holes >= 2:
-                v_128 += 5
+                v_128 += 6
             elif holes == 1:
-                v_256 += 5
+                v_256 += 6
             elif holes == 0:
-                if b <= 88:
-                    return 512
-                v_256 += 1
+                v_512 += 6
                 
-            # 2. Ink distribution (right-heavy in 128 due to '8')
+            # 2. Digit position & width of '1':
+            if len(boxes) >= 3:
+                w0, w1, w2 = boxes[0][2], boxes[1][2], boxes[2][2]
+                if w0 < w1 * 0.88 and w0 < w2 * 0.88:
+                    v_128 += 4
+                elif w1 < w0 * 0.88 and w1 < w2 * 0.88:
+                    v_512 += 4
+                elif abs(w0 - w1) <= 2 and abs(w1 - w2) <= 2:
+                    v_256 += 3
+            elif len(boxes) == 2:
+                w0, w1 = boxes[0][2], boxes[1][2]
+                if w0 < w1 * 0.85:
+                    v_128 += 3
+                elif w1 < w0 * 0.85:
+                    v_512 += 3
+                    
+            # 3. Ink balance (128 is strongly right-heavy due to '8')
             if ink_ratio <= 0.77:
                 v_128 += 3
-            elif ink_ratio >= 0.82:
-                v_256 += 3
+            elif ink_ratio >= 0.80:
+                v_256 += 1
+                v_512 += 1
                 
-            # 3. Digit 0 vs Digit 1 width ratio
-            if w0_w1 < 0.88 or first_ratio < 0.48:
+            # 4. Color sampling evidence:
+            if b >= 106:
                 v_128 += 3
-            elif w0_w1 >= 0.95 and first_ratio >= 0.58:
+            elif b <= 88:
+                v_512 += 3
+            elif 90 <= b <= 104:
                 v_256 += 3
                 
-            # 4. Color sampling evidence
-            if best_val == 128 or b >= 106:
+            if best_val == 128:
                 v_128 += 2
-            elif best_val == 256 or b <= 101:
+            elif best_val == 256:
                 v_256 += 2
+            elif best_val == 512:
+                v_512 += 2
                 
-            if v_128 > v_256:
-                return 128
-            elif v_256 > v_128:
-                return 256
-            else:
-                return 128 if b >= 105.5 else 256
+            scores = {128: v_128, 256: v_256, 512: v_512}
+            return max(scores, key=scores.get)
                 
         return 0 if best_val == -1 else best_val
