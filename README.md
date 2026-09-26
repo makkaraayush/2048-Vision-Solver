@@ -1,9 +1,15 @@
-# CodeD3mon-2048: Computer Vision & Autonomous AI Engine
+# CodeD3mon-2048: Computer Vision & Autonomous Self-Training AI Engine
 
-An autonomous game agent, evolutionary training lab, and real-time telemetry dashboard that plays 2048 through raw Computer Vision, evaluates board states using a custom Expectimax search engine with a snake monotonicity heuristic, and physically executes keystrokes in real time.
+An autonomous game agent with a **self-evolving genetic training lab** and real-time telemetry dashboard. It plays 2048 through raw Computer Vision, continuously trains and refines its own evaluation heuristics via headless evolutionary self-play, and physically executes native keystrokes in real time.
 
 **Author**: [Aayush Makkar](https://github.com/makkaraayush) (Online Handle: **CodeD3mon**)  
 **Built with**: Python (FastAPI, OpenCV, MSS, Numba, pynput) & Next.js / TypeScript
+
+### Key Highlights
+- 🧬 **Autonomous Self-Training Lab**: Built-in headless genetic algorithm that plays thousands of simulated games in memory, continuously evolving and mutating heuristic weight matrices across generations to break score records.
+- 👁️ **Zero-Hook Vision Perception**: Direct pixel-level board detection via OpenCV & MSS in ~1.8ms—no browser JavaScript hooks, DOM scraping, or game memory tampering.
+- 🧠 **Probabilistic Expectimax Tree**: Models stochastic tile spawns (90% chance of 2, 10% chance of 4) with 1D bitwise zero-copy caching evaluating 50,000+ nodes/sec.
+- 🕹️ **Physical Keystroke Automation**: Dispatches native OS arrow keys (`pynput`) synchronized with the browser's CSS animation frame rates.
 
 ---
 
@@ -15,7 +21,7 @@ Most 2048 AI projects cheat by hooking into the browser's JavaScript memory or u
 1. It has **eyes**: Grabs desktop frames via screen capture and uses OpenCV to parse the board state without any direct memory access or API hooks.
 2. It has a **brain**: Uses an Expectimax decision tree to model stochastic tile spawns (90% chance of 2, 10% chance of 4) combined with an exponential snake gradient matrix.
 3. It has **hands**: Physically dispatches native OS keystrokes (`pynput`) with timing buffers to account for CSS transition animations.
-4. It **self-evolves**: Includes an in-memory genetic algorithm that plays thousands of headless games to mutate and discover better heuristic weight vectors over time.
+4. It **self-trains & evolves**: Features an in-memory evolutionary trainer that simulates games at warp speed to discover, test, and persist superior heuristic weight vectors without human intervention.
 
 ---
 
