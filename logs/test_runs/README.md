@@ -14,7 +14,7 @@ Each test run evaluates the computer vision scanner, real-time Expectimax decisi
 | **[Test #2](test_02_baseline_default/)** | 2026-09-27 | **Default Baseline Heuristics** (`DEFAULT_GRADIENT_WEIGHTS`) | **1024** | **11,896** | 700 | ~20 ms | [Timelapse](test_02_baseline_default/test_02_timelapse.mp4) • [Score Screen](test_02_baseline_default/test_02_final_score.png) | Completed |
 | **[Test #3](test_03_baseline_default/)** | 2026-09-27 | **Default Baseline Heuristics** (`DEFAULT_GRADIENT_WEIGHTS`) | **2048** 🏆 | **36,032** | 1,881 | ~25 ms | [Timelapse](test_03_baseline_default/test_03_timelapse.mp4) • [Score Screen](test_03_baseline_default/test_03_final_score.png) | **Victory Milestone** |
 | **[Test #4](test_04_champion_gen4/)** | 2026-09-28 | **Evolved Champion Gen 4** (`best_weights.json` — Level 5) | **2048** 🏆 | **26,376** | 1,355 | ~22 ms | [Timelapse](test_04_champion_gen4/test_04_timelapse.mp4) • [Score Screen](test_04_champion_gen4/test_04_final_score.png) | Completed |
-| **[Test #5](test_05_champion_gen4/)** | 2026-09-28 | **Evolved Champion Gen 4** (`best_weights.json` — Level 5) | **4096** 🌟 | **44,688** | ~2,280+ | ~24 ms | [Timelapse](test_05_champion_gen4/test_05_timelapse.mp4) • [Score Screen](test_05_champion_gen4/test_05_final_score.png) | **4096 Milestone (Paused)** |
+| **[Test #5](test_05_champion_gen4/)** | 2026-09-28 | **Evolved Champion Gen 4** (`best_weights.json` — Level 5) | **4096** 🌟 | **61,204** 🏆 | 2,863 | ~24 ms | [Timelapse](test_05_champion_gen4/test_05_timelapse.mp4) • [Score Screen](test_05_champion_gen4/test_05_final_score.png) | **4096 Grandmaster Record** |
 
 ---
 
@@ -44,8 +44,9 @@ Each test run evaluates the computer vision scanner, real-time Expectimax decisi
 * **Key Finding**: Confirmed that evolved corner-weight biases drastically accelerate feeder tile merging, proving the genetic algorithm's superiority over standard hand-tuned gradients.
 * **Full Report, Video & Screenshot**: [View Test #4 Log](test_04_champion_gen4/)
 
-### Test #5: 4096 Grandmaster Record & Tile Perception Analysis
+### Test #5: 4096 Grandmaster Record & Complete Endgame Run
 * **Goal**: High-tier endurance test evaluating whether the Gen 4 Champion could breach the elusive **4096 tile** barrier.
-* **Result**: **New System Record: 4096 Tile Assembled!** Active game score reached **44,688 points** across ~2,280+ moves.
-* **Critical Observation & Bug Discovery**: Upon assembling the 4096 tile in corner cell `[0, 0]`, the computer vision classifier misidentified the dark charcoal/blackish-brown 4096 tile as `64`. To prevent the Expectimax solver from making flawed decisions caused by perceiving its highest tile as a low-level tile, the session was manually paused for perceptual palette calibration.
+* **Result**: **All-Time System Record: 4096 Tile & 61,204 Points!** Completed 2,863 moves across a 21.1-minute combined session.
+* **Author's Reflection**: *"The decisions it made genuinely shocked me myself. I was shocked by how intelligent the AI trained itself that quickly."*
+* **Perception Bug & Live Resolution**: Paused at the 4096 milestone when the dark charcoal tile was briefly misidentified as 64. Calibrated `scanner.py` with native 4096 color profiles and topological contour hole verification, then resumed gameplay to finish the complete run.
 * **Full Report, Video & Screenshot**: [View Test #5 Log](test_05_champion_gen4/)
