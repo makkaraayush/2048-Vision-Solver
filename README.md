@@ -271,6 +271,8 @@ Verification logs, gameplay timelapses, and post-mortem analyses from live auton
 | Run ID | Configuration | Max Tile | Score | Moves | Full Report & Artifacts |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **[Test #1](logs/test_runs/test_01_baseline_default/)** | **Default Baseline Heuristics** (`DEFAULT_GRADIENT_WEIGHTS`) | **1024** | **12,120** | 708 | [View Report & Timelapse](logs/test_runs/test_01_baseline_default/) |
+| **[Test #2](logs/test_runs/test_02_baseline_default/)** | **Default Baseline Heuristics** (`DEFAULT_GRADIENT_WEIGHTS`) | **1024** | **11,896** | 700 | [View Report & Timelapse](logs/test_runs/test_02_baseline_default/) |
+| **[Test #3](logs/test_runs/test_03_baseline_default/)** | **Default Baseline Heuristics** (`DEFAULT_GRADIENT_WEIGHTS`) | **2048** 🏆 | **36,032** | 1,881 | [View Report & Timelapse](logs/test_runs/test_03_baseline_default/) |
 
 > Browse all logs, observations, and raw records in [**`logs/test_runs/`**](logs/test_runs/).
 
