@@ -9,7 +9,7 @@
 
 ---
 
-## 📊 Run Metrics & Results
+## Run Metrics & Results
 
 | Metric | Measured Value | Notes |
 | :--- | :--- | :--- |
@@ -23,7 +23,7 @@
 
 ---
 
-## 📸 Final Result & Score Screen
+## Final Result & Score Screen
 
 The session concluded with an official score of **12,120 points** across **708 moves**, reaching the **1024** tile:
 
@@ -31,7 +31,7 @@ The session concluded with an official score of **12,120 points** across **708 m
 
 ---
 
-## 📹 Video Recording & Timelapse
+## Video Recording & Timelapse
 
 A condensed 20-second high-speed timelapse of the complete 5.3-minute autonomous gameplay session is stored alongside this report:
 
@@ -40,9 +40,9 @@ A condensed 20-second high-speed timelapse of the complete 5.3-minute autonomous
 
 ---
 
-## 🧠 Post-Mortem & Technical Observations
+## Post-Mortem & Technical Observations
 
-### What Worked Exceptionally Well:
+### What Worked Well:
 1. **Perception Reliability**: The blue-channel text segmentation and topological hole detection (`cv2.RETR_CCOMP`) had a 100% detection rate. 128, 256, and 512 were never confused even once throughout 708 moves.
 2. **Animation Synchronization**: The 150ms settle buffer completely eliminated CSS slide blur desyncs. The AI never read a half-slid tile.
 3. **Throughput**: Peak search speed regularly exceeded 48,000 nodes/sec with zero CPU throttling.

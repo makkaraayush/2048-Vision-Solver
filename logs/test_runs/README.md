@@ -6,7 +6,7 @@ Each test run evaluates the computer vision scanner, real-time Expectimax decisi
 
 ---
 
-## 📈 Benchmark Summary Table
+## Benchmark Summary Table
 
 | Run ID | Date | Configuration / Model | Max Tile | Score | Moves | Avg Latency | Media Logs | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -14,7 +14,7 @@ Each test run evaluates the computer vision scanner, real-time Expectimax decisi
 
 ---
 
-## 🔬 Test Run Progression & Findings
+## Test Run Progression & Findings
 
 ### Test #1: Baseline Verification (Default Heuristics)
 * **Goal**: Validate end-to-end vision perception, zero-hook tile classification (including yellow 128/256/512 disambiguation), browser CSS sync, and baseline Expectimax performance.

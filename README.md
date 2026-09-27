@@ -6,10 +6,10 @@ An autonomous game agent with a **self-evolving genetic training lab** and real-
 **Built with**: Python (FastAPI, OpenCV, MSS, Numba, pynput) & Next.js / TypeScript
 
 ### Key Highlights
-- 🧬 **Autonomous Self-Training Lab**: Built-in headless genetic algorithm that plays thousands of simulated games in memory, continuously evolving and mutating heuristic weight matrices across generations to break score records.
-- 👁️ **Zero-Hook Vision Perception**: Direct pixel-level board detection via OpenCV & MSS in ~1.8ms—no browser JavaScript hooks, DOM scraping, or game memory tampering.
-- 🧠 **Probabilistic Expectimax Tree**: Models stochastic tile spawns (90% chance of 2, 10% chance of 4) with 1D bitwise zero-copy caching evaluating 50,000+ nodes/sec.
-- 🕹️ **Physical Keystroke Automation**: Dispatches native OS arrow keys (`pynput`) synchronized with the browser's CSS animation frame rates.
+- **Autonomous Self-Training Lab**: Built-in headless genetic algorithm that plays simulated games in memory, mutating heuristic weight matrices across generations to find higher scoring strategies.
+- **Zero-Hook Vision Perception**: Direct pixel-level board detection via OpenCV and MSS in ~1.8ms. No browser JavaScript hooks, DOM scraping, or game memory tampering.
+- **Probabilistic Expectimax Tree**: Models stochastic tile spawns (90% chance of 2, 10% chance of 4) with 1D bitwise zero-copy caching evaluating 50,000+ nodes/sec.
+- **Physical Keystroke Automation**: Dispatches native OS arrow keys (`pynput`) synchronized with the browser's CSS animation frame rates.
 
 ---
 
@@ -205,15 +205,15 @@ npm run dev
 
 1. Open [play2048.co](https://play2048.co) in your browser.
 2. Keep the 2048 board visible on your screen.
-   > **💡 Display Setup Tips**:
-   > - **Multiple Monitors**: If you use multiple displays and the scanner does not lock onto the board, move your 2048 browser window to your **primary (main) display**.
-   > - **Single Monitor**: Use Windows Snap to arrange the windows side-by-side: snap the 2048 game to the left half (<kbd>Win</kbd> + <kbd>←</kbd>) and the CodeD3mon Dashboard to the right half (<kbd>Win</kbd> + <kbd>→</kbd>). This ensures OpenCV has full pixel visibility of the board while keeping your live telemetry dashboard visible without overlapping.
+   > **Display & Layout Tips**:
+   > - **Multiple Monitors**: If you use multiple displays and the scanner does not lock onto the board, keep the 2048 browser window on your **primary (main) display**.
+   > - **Single Monitor (Windows Snap)**: Snap the 2048 game to the left half (<kbd>Win</kbd> + <kbd>&larr;</kbd>) and the CodeD3mon Dashboard to the right half (<kbd>Win</kbd> + <kbd>&rarr;</kbd>). In the dashboard controls, click **Left 1/2** on the **Scan** bar. This restricts computer vision scanning strictly to the left half of your screen, completely preventing dashboard panels from interfering with board detection.
 3. Open the **CodeD3mon Dashboard** at `http://localhost:3000`.
-4. Click **Scanner Off** $\rightarrow$ **Scanner Active**. The live board will appear in the **Vision Matrix** panel with calculated hints.
+4. Click **Scanner Off** -> **Scanner Active**. The live board will appear in the **Vision Matrix** panel with calculated hints.
 5. **To Enable Autonomous Play**:
-   - Click **Auto-Play Locked** $\rightarrow$ **Auto-Play Unlocked** (blue).
+   - Click **Auto-Play Locked** -> **Auto-Play Unlocked** (blue).
    - Click your 2048 game window to focus it.
-   - Press **`F9`** globally on your keyboard. The banner will turn red and the AI will begin playing automatically!
+   - Press **`F9`** globally on your keyboard. The banner will turn red and the AI will begin playing automatically.
    - Press **`F9`** again anytime to pause.
 6. **To Train the AI**:
    - Scroll to the **Evolutionary Training Lab** on the dashboard and click **Start Evolutionary Training**.
@@ -259,17 +259,17 @@ npm run dev
 
 ---
 
-## 📊 Benchmarks & Empirical Testing Logs
+## Benchmarks & Testing Logs
 
-Comprehensive verification logs, gameplay timelapses, and post-mortem analyses from live autonomous test sessions are documented in the [`logs/test_runs/`](logs/test_runs/) directory.
+Verification logs, gameplay timelapses, and post-mortem analyses from live autonomous test sessions are documented in the [`logs/test_runs/`](logs/test_runs/) directory.
 
 ### Live Hardware-in-the-Loop Test Runs
 
 | Run ID | Configuration | Max Tile | Score | Moves | Full Report & Artifacts |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **[Test #1](logs/test_runs/test_01_baseline_default/)** | **Default Baseline Heuristics** (`DEFAULT_GRADIENT_WEIGHTS`) | **1024** | **12,120** | 708 | [View Report, Timelapse & Score Screen 📹](logs/test_runs/test_01_baseline_default/) |
+| **[Test #1](logs/test_runs/test_01_baseline_default/)** | **Default Baseline Heuristics** (`DEFAULT_GRADIENT_WEIGHTS`) | **1024** | **12,120** | 708 | [View Report & Timelapse](logs/test_runs/test_01_baseline_default/) |
 
-> 📁 **Browse All Logs & Video Recordings**: Explore the complete testing history, observations, and raw records in [**`logs/test_runs/`**](logs/test_runs/).
+> Browse all logs, observations, and raw records in [**`logs/test_runs/`**](logs/test_runs/).
 
 ### Engine Performance Metrics
 
