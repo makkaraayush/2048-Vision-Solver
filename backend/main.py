@@ -36,6 +36,7 @@ state = {
     "is_running": False,          # Scanning and calculating (Hint Mode)
     "automation_allowed": False,   # UI Toggle for safety
     "auto_play_active": False,     # Hotkey toggle for pressing keys
+    "scan_region": "full",         # "full", "left_half", "right_half"
     "last_stats": {},
     "current_grid": [],
     "active_model": heur.get_active_model_mode(),  # "default" or "champion"
@@ -54,6 +55,7 @@ state = {
     }
 }
 
+scanner_instance: Optional[BoardScanner] = None
 trainer_instance: GeneticTrainer = None
 trainer_thread: threading.Thread = None
 
@@ -128,6 +130,8 @@ async def websocket_endpoint(websocket: WebSocket):
             data = await websocket.receive_text()
             if data == "toggle":
                 state["is_running"] = not state["is_running"]
+                if state["is_running"] and scanner_instance:
+                    scanner_instance.board_bbox = None  # Force fresh board detection
                 logger.info(f"Scanner Running: {state['is_running']}")
                 await broadcast_state()
             elif data == "toggle_automation":
@@ -136,6 +140,14 @@ async def websocket_endpoint(websocket: WebSocket):
                     state["auto_play_active"] = False
                 logger.info(f"Automation Allowed: {state['automation_allowed']}")
                 await broadcast_state()
+            elif data.startswith("set_scan_region:"):
+                region = data.split(":", 1)[1].strip()
+                if region in ("full", "left_half", "right_half"):
+                    state["scan_region"] = region
+                    if scanner_instance:
+                        scanner_instance.set_scan_region(region)
+                    logger.info(f"Scan region set to: {region}")
+                    await broadcast_state()
             elif data == "toggle_model":
                 if state["has_champion"]:
                     new_mode = "champion" if state["active_model"] == "default" else "default"
@@ -192,7 +204,11 @@ async def websocket_endpoint(websocket: WebSocket):
         connected_clients.discard(websocket)
 
 def solver_loop():
+    global scanner_instance
     scanner = BoardScanner()
+    scanner_instance = scanner
+    if "scan_region" in state:
+        scanner.set_scan_region(state["scan_region"])
     solver = ExpectimaxSolver()
     controller = GameController(delay=0.1)
 

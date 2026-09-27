@@ -33,6 +33,7 @@ interface SolverState {
   is_running: boolean;
   automation_allowed: boolean;
   auto_play_active: boolean;
+  scan_region?: "full" | "left_half" | "right_half";
   active_model?: "default" | "champion";
   has_champion?: boolean;
   champion_meta?: {
@@ -216,6 +217,47 @@ export default function Home() {
                   </span>
                 )}
               </div>
+            </div>
+
+            {/* Scan Region Selector */}
+            <div className="flex items-center gap-1 bg-slate-900/80 border border-slate-800 rounded-xl p-1 text-xs">
+              <span className="text-[11px] text-slate-400 font-mono px-1 hidden lg:inline">Scan:</span>
+              <button
+                type="button"
+                onClick={() => ws.current?.send("set_scan_region:full")}
+                title="Scan all monitors / full desktop"
+                className={`px-2 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                  (state?.scan_region || 'full') === 'full'
+                    ? 'bg-slate-700 text-white font-semibold shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                Full
+              </button>
+              <button
+                type="button"
+                onClick={() => ws.current?.send("set_scan_region:left_half")}
+                title="Scan left half of screen (ideal for split-screen with 2048 on left)"
+                className={`px-2 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                  state?.scan_region === 'left_half'
+                    ? 'bg-indigo-600 text-white font-semibold shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                Left 1/2
+              </button>
+              <button
+                type="button"
+                onClick={() => ws.current?.send("set_scan_region:right_half")}
+                title="Scan right half of screen"
+                className={`px-2 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                  state?.scan_region === 'right_half'
+                    ? 'bg-indigo-600 text-white font-semibold shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                Right 1/2
+              </button>
             </div>
           </div>
           
