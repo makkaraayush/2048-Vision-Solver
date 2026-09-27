@@ -262,12 +262,11 @@ Comprehensive verification logs, gameplay timelapses, and post-mortem analyses f
 
 ### Live Hardware-in-the-Loop Test Runs
 
-| Run ID | Configuration | Max Tile | Score | Moves | Full Report & Video |
+| Run ID | Configuration | Max Tile | Score | Moves | Full Report & Artifacts |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **[Test #1](logs/test_runs/test_01_baseline_default/)** | **Default Baseline Heuristics** (`DEFAULT_GRADIENT_WEIGHTS`) | **1024** | **12,120** | 708 | [View Report & Timelapse 📹](logs/test_runs/test_01_baseline_default/) |
-| **Test #2** | **Evolved Champion Gen 50+** (`best_weights.json`) | *Target: 2048+* | *TBD* | *TBD* | *In Progress* |
+| **[Test #1](logs/test_runs/test_01_baseline_default/)** | **Default Baseline Heuristics** (`DEFAULT_GRADIENT_WEIGHTS`) | **1024** | **12,120** | 708 | [View Report, Timelapse & Score Screen 📹](logs/test_runs/test_01_baseline_default/) |
 
-> 📁 **Browse All Logs & Video Recordings**: Explore the complete testing history, observations, and model progression in [**`logs/test_runs/`**](logs/test_runs/).
+> 📁 **Browse All Logs & Video Recordings**: Explore the complete testing history, observations, and raw records in [**`logs/test_runs/`**](logs/test_runs/).
 
 ### Engine Performance Metrics
 

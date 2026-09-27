@@ -14,51 +14,99 @@ DEFAULT_GRADIENT_WEIGHTS = [
     256.0,   128.0,   64.0,    32.0,
     2.0,     4.0,     8.0,     16.0
 ]
+DEFAULT_WEIGHT_GRADIENT = 1.0
+DEFAULT_WEIGHT_EMPTY = 270.0
+DEFAULT_WEIGHT_PENALTY = 11.0
 
+# Current active parameters
 GRADIENT_WEIGHTS = list(DEFAULT_GRADIENT_WEIGHTS)
-WEIGHT_GRADIENT = 1.0
-WEIGHT_EMPTY = 270.0
-WEIGHT_PENALTY = 11.0
+WEIGHT_GRADIENT = DEFAULT_WEIGHT_GRADIENT
+WEIGHT_EMPTY = DEFAULT_WEIGHT_EMPTY
+WEIGHT_PENALTY = DEFAULT_WEIGHT_PENALTY
+
+active_model_mode = "default"  # "default" or "champion"
 
 def get_weights_path() -> str:
     # Resolve to backend/best_weights.json
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     return os.path.join(base_dir, "best_weights.json")
 
-def load_saved_weights() -> Dict[str, Any]:
-    global GRADIENT_WEIGHTS, WEIGHT_GRADIENT, WEIGHT_EMPTY, WEIGHT_PENALTY
+def has_champion() -> bool:
     path = get_weights_path()
-    if os.path.exists(path):
-        try:
-            with open(path, "r") as f:
-                data = json.load(f)
-            if "gradient_weights" in data:
-                GRADIENT_WEIGHTS = [float(x) for x in data["gradient_weights"]]
-            if "weight_gradient" in data:
-                WEIGHT_GRADIENT = float(data["weight_gradient"])
-            if "weight_empty" in data:
-                WEIGHT_EMPTY = float(data["weight_empty"])
-            if "weight_penalty" in data:
-                WEIGHT_PENALTY = float(data["weight_penalty"])
-            logger.info(f"Loaded evolved weights from {path} (Gen {data.get('generation', 0)}, Record Max Tile: {data.get('best_max_tile', 0)})")
-            return data
-        except Exception as e:
-            logger.warning(f"Could not load saved weights from {path}: {e}")
-    return {}
+    if not os.path.exists(path):
+        return False
+    try:
+        with open(path, "r") as f:
+            data = json.load(f)
+        return "gradient_weights" in data and len(data["gradient_weights"]) == 16
+    except Exception:
+        return False
+
+def get_champion_meta() -> Dict[str, Any]:
+    path = get_weights_path()
+    if not os.path.exists(path):
+        return {}
+    try:
+        with open(path, "r") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+def apply_default_weights():
+    global GRADIENT_WEIGHTS, WEIGHT_GRADIENT, WEIGHT_EMPTY, WEIGHT_PENALTY, active_model_mode
+    GRADIENT_WEIGHTS = list(DEFAULT_GRADIENT_WEIGHTS)
+    WEIGHT_GRADIENT = DEFAULT_WEIGHT_GRADIENT
+    WEIGHT_EMPTY = DEFAULT_WEIGHT_EMPTY
+    WEIGHT_PENALTY = DEFAULT_WEIGHT_PENALTY
+    active_model_mode = "default"
+    logger.info("Activated [Default Baseline] heuristic weights.")
+
+def apply_champion_weights() -> bool:
+    global GRADIENT_WEIGHTS, WEIGHT_GRADIENT, WEIGHT_EMPTY, WEIGHT_PENALTY, active_model_mode
+    path = get_weights_path()
+    if not os.path.exists(path):
+        logger.warning("No champion weights found on disk. Falling back to Default.")
+        apply_default_weights()
+        return False
+    try:
+        with open(path, "r") as f:
+            data = json.load(f)
+        if "gradient_weights" in data:
+            GRADIENT_WEIGHTS = [float(x) for x in data["gradient_weights"]]
+        if "weight_gradient" in data:
+            WEIGHT_GRADIENT = float(data["weight_gradient"])
+        if "weight_empty" in data:
+            WEIGHT_EMPTY = float(data["weight_empty"])
+        if "weight_penalty" in data:
+            WEIGHT_PENALTY = float(data["weight_penalty"])
+        active_model_mode = "champion"
+        logger.info(f"Activated [Evolved Champion] weights (Gen {data.get('generation', 0)}, Record Tile: {data.get('best_max_tile', 0)})")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to load champion weights: {e}")
+        apply_default_weights()
+        return False
+
+def set_active_model(mode: str) -> str:
+    if mode == "champion" and has_champion():
+        apply_champion_weights()
+    else:
+        apply_default_weights()
+    return active_model_mode
+
+def get_active_model_mode() -> str:
+    return active_model_mode
+
+def load_saved_weights() -> Dict[str, Any]:
+    return get_champion_meta()
 
 def save_weights(gradient_weights: List[float], weight_gradient: float, weight_empty: float, weight_penalty: float, meta: Dict[str, Any] = None) -> None:
-    global GRADIENT_WEIGHTS, WEIGHT_GRADIENT, WEIGHT_EMPTY, WEIGHT_PENALTY
-    GRADIENT_WEIGHTS = list(gradient_weights)
-    WEIGHT_GRADIENT = float(weight_gradient)
-    WEIGHT_EMPTY = float(weight_empty)
-    WEIGHT_PENALTY = float(weight_penalty)
-    
     path = get_weights_path()
     payload = {
-        "gradient_weights": GRADIENT_WEIGHTS,
-        "weight_gradient": WEIGHT_GRADIENT,
-        "weight_empty": WEIGHT_EMPTY,
-        "weight_penalty": WEIGHT_PENALTY
+        "gradient_weights": [float(x) for x in gradient_weights],
+        "weight_gradient": float(weight_gradient),
+        "weight_empty": float(weight_empty),
+        "weight_penalty": float(weight_penalty)
     }
     if meta:
         payload.update(meta)
@@ -70,8 +118,8 @@ def save_weights(gradient_weights: List[float], weight_gradient: float, weight_e
     except Exception as e:
         logger.error(f"Failed to save weights to {path}: {e}")
 
-# Load weights upon startup if a trained model exists
-load_saved_weights()
+# Startup: keep default weights active initially unless champion exists
+apply_default_weights()
 
 def evaluate_board(board: Board) -> float:
     """

@@ -38,6 +38,9 @@ state = {
     "auto_play_active": False,     # Hotkey toggle for pressing keys
     "last_stats": {},
     "current_grid": [],
+    "active_model": heur.get_active_model_mode(),  # "default" or "champion"
+    "has_champion": heur.has_champion(),
+    "champion_meta": heur.get_champion_meta(),
     "training_active": False,
     "training_stats": {
         "generation": saved_model.get("generation", 0),
@@ -86,6 +89,9 @@ def trigger_broadcast():
 
 def on_training_update(stats: dict):
     state["training_stats"].update(stats)
+    # Update champion availability if a new champion was discovered
+    state["has_champion"] = heur.has_champion()
+    state["champion_meta"] = heur.get_champion_meta()
     trigger_broadcast()
 
 def start_training_thread():
@@ -96,6 +102,8 @@ def start_training_thread():
     trainer_instance.run()
     state["training_active"] = False
     state["training_stats"]["status"] = "Training Paused"
+    state["has_champion"] = heur.has_champion()
+    state["champion_meta"] = heur.get_champion_meta()
     trigger_broadcast()
 
 def stop_training():
@@ -111,7 +119,10 @@ async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     connected_clients.add(websocket)
     try:
-        # Send initial state immediately
+        # Refresh champion availability on new connection
+        state["has_champion"] = heur.has_champion()
+        state["champion_meta"] = heur.get_champion_meta()
+        state["active_model"] = heur.get_active_model_mode()
         await websocket.send_json(state)
         while True:
             data = await websocket.receive_text()
@@ -125,6 +136,24 @@ async def websocket_endpoint(websocket: WebSocket):
                     state["auto_play_active"] = False
                 logger.info(f"Automation Allowed: {state['automation_allowed']}")
                 await broadcast_state()
+            elif data == "toggle_model":
+                if state["has_champion"]:
+                    new_mode = "champion" if state["active_model"] == "default" else "default"
+                    heur.set_active_model(new_mode)
+                    state["active_model"] = heur.get_active_model_mode()
+                    logger.info(f"Switched model to: {state['active_model']}")
+                    await broadcast_state()
+                else:
+                    logger.warning("toggle_model requested but no champion is available yet.")
+            elif data.startswith("set_model:"):
+                target = data.split(":", 1)[1].strip()
+                if target == "champion" and not state["has_champion"]:
+                    logger.warning("Cannot set champion: no champion trained yet.")
+                else:
+                    heur.set_active_model(target)
+                    state["active_model"] = heur.get_active_model_mode()
+                    logger.info(f"Active model set to: {state['active_model']}")
+                    await broadcast_state()
             elif data == "toggle_training":
                 global trainer_thread
                 if not state["training_active"]:
