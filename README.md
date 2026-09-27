@@ -212,7 +212,7 @@ npm run dev
    > - **Standard / Dual-Monitor Play**: By default, the computer vision engine locates and tracks the 2048 board automatically on your primary display. No setup or calibration is needed.
    > - **Split-Screen & Custom Tabs (Optional Calibration)**: If you use Windows Snap to split your screen (<kbd>Win</kbd> + <kbd>&larr;</kbd>) or resize your browser to an unusual layout, you can use the **Calibrate** button in the dashboard controls. Click the **top-left** corner and then the **bottom-right** corner of your 2048 grid. The engine locks onto those exact coordinates with zero guessing. You can switch back to automatic detection anytime by clicking **Auto**.
 3. Open the **CodeD3mon Dashboard** at `http://localhost:3000`.
-4. Click **Scanner Off** -> **Scanner Active**. The live board will appear in the **Vision Matrix** panel with calculated hints.
+4. Click **Scanner Off** -> **Scanner Active**. The live board will appear in the **Vision Matrix** panel with calculated hints, accompanied by a real-time **Live Optical Crop** preview showing OpenCV's exact camera feed with green 4x4 alignment grid lines.
 5. **To Enable Autonomous Play**:
    - Click **Auto-Play Locked** -> **Auto-Play Unlocked** (blue).
    - Click your 2048 game window to focus it.

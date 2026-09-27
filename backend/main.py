@@ -12,6 +12,8 @@ import src.ai.heuristics as heur
 from pynput import keyboard, mouse
 import threading
 import os
+import base64
+import cv2
 from typing import Optional
 
 from contextlib import asynccontextmanager
@@ -39,6 +41,7 @@ state = {
     "auto_play_active": False,     # Hotkey toggle for pressing keys
     "is_calibrated": False,        # True when user has manually calibrated board
     "calibration_status": "idle",  # "idle", "step1", "step2", "done", "error"
+    "vision_preview": "",          # Base64 encoded JPEG thumbnail of live board crop
     "last_stats": {},
     "current_grid": [],
     "active_model": heur.get_active_model_mode(),  # "default" or "champion"
@@ -98,18 +101,26 @@ def start_calibration_session():
             pt1 = calibration_clicks[0]
             pt2 = calibration_clicks[1]
             
-            left = min(pt1[0], pt2[0])
-            top = min(pt1[1], pt2[1])
+            # Map virtual screen coordinates into MSS frame coordinates
+            v_left = 0
+            v_top = 0
+            if scanner_instance and scanner_instance.sct and scanner_instance.sct.monitors:
+                v_left = scanner_instance.sct.monitors[0].get("left", 0)
+                v_top = scanner_instance.sct.monitors[0].get("top", 0)
+
+            left = min(pt1[0], pt2[0]) - v_left
+            top = min(pt1[1], pt2[1]) - v_top
             width = abs(pt2[0] - pt1[0])
             height = abs(pt2[1] - pt1[1])
             
-            if width > 80 and height > 80:
+            if width > 60 and height > 60:
                 new_bbox = {"left": left, "top": top, "width": width, "height": height}
                 if scanner_instance:
                     scanner_instance.set_manual_bbox(new_bbox)
                 state["is_calibrated"] = True
                 state["calibration_status"] = "done"
-                logger.info(f"Manual board calibration complete: {new_bbox}")
+                state["is_running"] = True  # Automatically wake up scanner to show live optical preview
+                logger.info(f"Manual board calibration complete and locked: {new_bbox}")
             else:
                 state["calibration_status"] = "error"
                 logger.warning(f"Calibration box too small ({width}x{height})")
@@ -135,6 +146,7 @@ def stop_calibration_session():
 def reset_calibration():
     stop_calibration_session()
     state["is_calibrated"] = False
+    state["vision_preview"] = ""
     if scanner_instance:
         scanner_instance.reset_calibration()
     logger.info("Board calibration reset to automatic detection.")
@@ -212,7 +224,8 @@ async def websocket_endpoint(websocket: WebSocket):
             if data == "toggle":
                 state["is_running"] = not state["is_running"]
                 if state["is_running"] and scanner_instance:
-                    scanner_instance.board_bbox = None  # Force fresh board detection
+                    if not scanner_instance.manual_calibrated:
+                        scanner_instance.board_bbox = None  # Force fresh board detection
                 logger.info(f"Scanner Running: {state['is_running']}")
                 await broadcast_state()
             elif data == "toggle_automation":
@@ -299,6 +312,19 @@ def solver_loop():
             try:
                 grid = scanner.extract_grid()
                 state["current_grid"] = grid
+                
+                # Generate live optical crop thumbnail with 4x4 alignment grid lines
+                if scanner.last_board_crop is not None and scanner.last_board_crop.size > 0:
+                    try:
+                        thumb = cv2.resize(scanner.last_board_crop, (200, 200), interpolation=cv2.INTER_AREA)
+                        th, tw = thumb.shape[:2]
+                        for i in range(1, 4):
+                            cv2.line(thumb, (0, int(th * i / 4)), (tw, int(th * i / 4)), (0, 255, 0), 1)
+                            cv2.line(thumb, (int(tw * i / 4), 0), (int(tw * i / 4), th), (0, 255, 0), 1)
+                        _, buf = cv2.imencode('.jpg', thumb, [cv2.IMWRITE_JPEG_QUALITY, 70])
+                        state["vision_preview"] = base64.b64encode(buf).decode('utf-8')
+                    except Exception:
+                        pass
                 
                 board = Board(grid=grid)
                 if board.is_game_over():

@@ -11,6 +11,7 @@ class BoardScanner:
         self.sct = mss.mss()
         self.board_bbox: Optional[dict] = None
         self.manual_calibrated: bool = False
+        self.last_board_crop: Optional[np.ndarray] = None
         
         # Color definitions for 2048 tiles (standard colors)
         # Using BGR format for OpenCV
@@ -110,9 +111,18 @@ class BoardScanner:
             if not self.find_board(frame):
                 raise ValueError("Could not locate 2048 board on screen.")
                 
-        # Crop to board
-        x, y, w, h = self.board_bbox['left'], self.board_bbox['top'], self.board_bbox['width'], self.board_bbox['height']
+        # Crop to board safely within frame boundaries
+        h_frame, w_frame = frame.shape[:2]
+        bx, by = self.board_bbox['left'], self.board_bbox['top']
+        bw, bh = self.board_bbox['width'], self.board_bbox['height']
+        
+        x = max(0, min(bx, w_frame - 10))
+        y = max(0, min(by, h_frame - 10))
+        w = max(10, min(bw, w_frame - x))
+        h = max(10, min(bh, h_frame - y))
+        
         board_img = frame[y:y+h, x:x+w]
+        self.last_board_crop = board_img.copy()
         
         # Split into 4x4
         cell_w = w // 4

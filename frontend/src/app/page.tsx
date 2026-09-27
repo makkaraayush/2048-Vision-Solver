@@ -35,6 +35,7 @@ interface SolverState {
   auto_play_active: boolean;
   is_calibrated?: boolean;
   calibration_status?: "idle" | "step1" | "step2" | "done" | "error";
+  vision_preview?: string;
   active_model?: "default" | "champion";
   has_champion?: boolean;
   champion_meta?: {
@@ -323,7 +324,7 @@ export default function Home() {
                 Vision Matrix
               </h2>
               <div className="text-xs font-mono text-emerald-400/90 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
-                OpenCV Calibrated
+                {state?.is_calibrated ? "Manually Calibrated" : "OpenCV Auto-Track"}
               </div>
             </div>
             
@@ -343,6 +344,31 @@ export default function Home() {
                 </AnimatePresence>
               </div>
             </div>
+
+            {/* Live Optical Screen Crop Preview */}
+            {state?.vision_preview && (
+              <div className="mt-4 p-3 rounded-2xl bg-slate-950/90 border border-slate-800 flex items-center justify-between gap-3 shadow-inner">
+                <div className="flex items-center gap-3">
+                  <img 
+                    src={`data:image/jpeg;base64,${state.vision_preview}`} 
+                    alt="Live Optical Screen Crop" 
+                    className="w-14 h-14 rounded-xl border border-emerald-500/40 object-cover shadow-sm ring-1 ring-emerald-500/30"
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      Live Optical Crop
+                    </span>
+                    <span className="text-[11px] text-slate-400 font-mono mt-0.5">
+                      Green grid = 4x4 tile boundaries
+                    </span>
+                  </div>
+                </div>
+                <div className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                  {state?.is_calibrated ? "Locked" : "Auto"}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="mt-4 flex items-center justify-between text-xs text-slate-500 font-mono">
