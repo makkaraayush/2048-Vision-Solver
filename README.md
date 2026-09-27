@@ -273,6 +273,8 @@ Verification logs, gameplay timelapses, and post-mortem analyses from live auton
 | **[Test #1](logs/test_runs/test_01_baseline_default/)** | **Default Baseline Heuristics** (`DEFAULT_GRADIENT_WEIGHTS`) | **1024** | **12,120** | 708 | [View Report & Timelapse](logs/test_runs/test_01_baseline_default/) |
 | **[Test #2](logs/test_runs/test_02_baseline_default/)** | **Default Baseline Heuristics** (`DEFAULT_GRADIENT_WEIGHTS`) | **1024** | **11,896** | 700 | [View Report & Timelapse](logs/test_runs/test_02_baseline_default/) |
 | **[Test #3](logs/test_runs/test_03_baseline_default/)** | **Default Baseline Heuristics** (`DEFAULT_GRADIENT_WEIGHTS`) | **2048** 🏆 | **36,032** | 1,881 | [View Report & Timelapse](logs/test_runs/test_03_baseline_default/) |
+| **[Test #4](logs/test_runs/test_04_champion_gen4/)** | **Evolved Champion Gen 4** (`best_weights.json` — Level 5) | **2048** 🏆 | **26,376** | 1,355 | [View Report & Timelapse](logs/test_runs/test_04_champion_gen4/) |
+| **[Test #5](logs/test_runs/test_05_champion_gen4/)** | **Evolved Champion Gen 4** (`best_weights.json` — Level 5) | **4096** 🌟 | **44,688** | ~2,280+ | [View Report & Timelapse](logs/test_runs/test_05_champion_gen4/) |
 
 > Browse all logs, observations, and raw records in [**`logs/test_runs/`**](logs/test_runs/).
 
