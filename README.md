@@ -3,7 +3,10 @@
 An autonomous game agent with a **self-evolving genetic training lab** and real-time telemetry dashboard. It plays 2048 through raw Computer Vision, continuously trains and refines its own evaluation heuristics via headless evolutionary self-play, and physically executes native keystrokes in real time.
 
 **Author**: [Aayush Makkar](https://github.com/makkaraayush) (Online Handle: **CodeD3mon**)  
-**Built with**: Python (FastAPI, OpenCV, MSS, Numba, pynput) & Next.js / TypeScript
+**Built with**: Python (FastAPI, OpenCV, MSS, Numba, pynput) & Next.js / TypeScript  
+**Quick Links**: [Installation & Setup](#setup--running) &bull; [How to Play](#how-to-use) &bull; [Benchmarks & Logs](#benchmarks--testing-logs) &bull; [Architecture](#core-architecture)
+
+> Just want to get it running? Jump straight down to [Setup & Running](#setup--running) or [How to Use](#how-to-use).
 
 ### Key Highlights
 - **Autonomous Self-Training Lab**: Built-in headless genetic algorithm that plays simulated games in memory, mutating heuristic weight matrices across generations to find higher scoring strategies.
