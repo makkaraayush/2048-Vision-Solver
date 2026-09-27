@@ -209,8 +209,8 @@ npm run dev
 1. Open [play2048.co](https://play2048.co) in your browser.
 2. Keep the 2048 board visible on your screen.
    > **Display & Layout Tips**:
-   > - **Multiple Monitors**: If you use multiple displays and the scanner does not lock onto the board, keep the 2048 browser window on your **primary (main) display**.
-   > - **Single Monitor (Windows Snap)**: Snap the 2048 game to the left half (<kbd>Win</kbd> + <kbd>&larr;</kbd>) and the CodeD3mon Dashboard to the right half (<kbd>Win</kbd> + <kbd>&rarr;</kbd>). In the dashboard controls, click **Left 1/2** on the **Scan** bar. This restricts computer vision scanning strictly to the left half of your screen, completely preventing dashboard panels from interfering with board detection.
+   > - **Standard / Dual-Monitor Play**: By default, the computer vision engine locates and tracks the 2048 board automatically on your primary display. No setup or calibration is needed.
+   > - **Split-Screen & Custom Tabs (Optional Calibration)**: If you use Windows Snap to split your screen (<kbd>Win</kbd> + <kbd>&larr;</kbd>) or resize your browser to an unusual layout, you can use the **Calibrate** button in the dashboard controls. Click the **top-left** corner and then the **bottom-right** corner of your 2048 grid. The engine locks onto those exact coordinates with zero guessing. You can switch back to automatic detection anytime by clicking **Auto**.
 3. Open the **CodeD3mon Dashboard** at `http://localhost:3000`.
 4. Click **Scanner Off** -> **Scanner Active**. The live board will appear in the **Vision Matrix** panel with calculated hints.
 5. **To Enable Autonomous Play**:

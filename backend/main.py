@@ -9,7 +9,7 @@ from src.core.board import Board
 from src.core.controller import GameController
 from train import GeneticTrainer, calculate_level
 import src.ai.heuristics as heur
-from pynput import keyboard
+from pynput import keyboard, mouse
 import threading
 import os
 from typing import Optional
@@ -37,7 +37,8 @@ state = {
     "is_running": False,          # Scanning and calculating (Hint Mode)
     "automation_allowed": False,   # UI Toggle for safety
     "auto_play_active": False,     # Hotkey toggle for pressing keys
-    "scan_region": "full",         # "full", "left_half", "right_half"
+    "is_calibrated": False,        # True when user has manually calibrated board
+    "calibration_status": "idle",  # "idle", "step1", "step2", "done", "error"
     "last_stats": {},
     "current_grid": [],
     "active_model": heur.get_active_model_mode(),  # "default" or "champion"
@@ -59,6 +60,85 @@ state = {
 scanner_instance: Optional[BoardScanner] = None
 trainer_instance: GeneticTrainer = None
 trainer_thread: threading.Thread = None
+
+calibration_start_time = 0.0
+calibration_clicks = []
+calibration_listener: Optional[mouse.Listener] = None
+
+def start_calibration_session():
+    global calibration_start_time, calibration_clicks, calibration_listener
+    
+    if calibration_listener and calibration_listener.is_alive():
+        try:
+            calibration_listener.stop()
+        except:
+            pass
+            
+    calibration_clicks = []
+    calibration_start_time = time.time()
+    state["calibration_status"] = "step1"
+    trigger_broadcast()
+    
+    def on_click(x, y, button, pressed):
+        global calibration_clicks, calibration_listener
+        if not pressed or button != mouse.Button.left:
+            return
+            
+        # Ignore clicks within 350ms of calibration start (clicking the UI button)
+        if time.time() - calibration_start_time < 0.35:
+            return
+            
+        calibration_clicks.append((int(x), int(y)))
+        
+        if len(calibration_clicks) == 1:
+            state["calibration_status"] = "step2"
+            logger.info(f"Calibration Step 1: Top-Left at ({x}, {y})")
+            trigger_broadcast()
+        elif len(calibration_clicks) >= 2:
+            pt1 = calibration_clicks[0]
+            pt2 = calibration_clicks[1]
+            
+            left = min(pt1[0], pt2[0])
+            top = min(pt1[1], pt2[1])
+            width = abs(pt2[0] - pt1[0])
+            height = abs(pt2[1] - pt1[1])
+            
+            if width > 80 and height > 80:
+                new_bbox = {"left": left, "top": top, "width": width, "height": height}
+                if scanner_instance:
+                    scanner_instance.set_manual_bbox(new_bbox)
+                state["is_calibrated"] = True
+                state["calibration_status"] = "done"
+                logger.info(f"Manual board calibration complete: {new_bbox}")
+            else:
+                state["calibration_status"] = "error"
+                logger.warning(f"Calibration box too small ({width}x{height})")
+                
+            trigger_broadcast()
+            return False  # Stops the listener
+            
+    calibration_listener = mouse.Listener(on_click=on_click)
+    calibration_listener.daemon = True
+    calibration_listener.start()
+
+def stop_calibration_session():
+    global calibration_listener, calibration_clicks
+    if calibration_listener and calibration_listener.is_alive():
+        try:
+            calibration_listener.stop()
+        except:
+            pass
+    calibration_clicks = []
+    state["calibration_status"] = "idle"
+    trigger_broadcast()
+
+def reset_calibration():
+    stop_calibration_session()
+    state["is_calibrated"] = False
+    if scanner_instance:
+        scanner_instance.reset_calibration()
+    logger.info("Board calibration reset to automatic detection.")
+    trigger_broadcast()
 
 def on_press(key):
     try:
@@ -141,14 +221,15 @@ async def websocket_endpoint(websocket: WebSocket):
                     state["auto_play_active"] = False
                 logger.info(f"Automation Allowed: {state['automation_allowed']}")
                 await broadcast_state()
-            elif data.startswith("set_scan_region:"):
-                region = data.split(":", 1)[1].strip()
-                if region in ("full", "left_half", "right_half"):
-                    state["scan_region"] = region
-                    if scanner_instance:
-                        scanner_instance.set_scan_region(region)
-                    logger.info(f"Scan region set to: {region}")
-                    await broadcast_state()
+            elif data == "start_calibration":
+                logger.info("Manual calibration requested via Web UI.")
+                start_calibration_session()
+            elif data == "cancel_calibration":
+                logger.info("Manual calibration cancelled via Web UI.")
+                stop_calibration_session()
+            elif data == "reset_calibration":
+                logger.info("Resetting calibration to auto-detect via Web UI.")
+                reset_calibration()
             elif data == "toggle_model":
                 if state["has_champion"]:
                     new_mode = "champion" if state["active_model"] == "default" else "default"
@@ -208,8 +289,6 @@ def solver_loop():
     global scanner_instance
     scanner = BoardScanner()
     scanner_instance = scanner
-    if "scan_region" in state:
-        scanner.set_scan_region(state["scan_region"])
     solver = ExpectimaxSolver()
     controller = GameController(delay=0.1)
 

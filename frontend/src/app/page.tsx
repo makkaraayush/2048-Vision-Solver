@@ -33,7 +33,8 @@ interface SolverState {
   is_running: boolean;
   automation_allowed: boolean;
   auto_play_active: boolean;
-  scan_region?: "full" | "left_half" | "right_half";
+  is_calibrated?: boolean;
+  calibration_status?: "idle" | "step1" | "step2" | "done" | "error";
   active_model?: "default" | "champion";
   has_champion?: boolean;
   champion_meta?: {
@@ -219,46 +220,65 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Scan Region Selector */}
-            <div className="flex items-center gap-1 bg-slate-900/80 border border-slate-800 rounded-xl p-1 text-xs">
-              <span className="text-[11px] text-slate-400 font-mono px-1 hidden lg:inline">Scan:</span>
+            {/* Manual Calibration Controls */}
+            {state?.calibration_status === "step1" ? (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs animate-pulse font-medium">
+                <Target className="w-3.5 h-3.5 text-amber-400" />
+                <span>Click <strong>TOP-LEFT</strong> corner of 2048 grid</span>
+                <button
+                  type="button"
+                  onClick={() => ws.current?.send("cancel_calibration")}
+                  className="ml-1 text-slate-400 hover:text-white underline cursor-pointer text-[11px]"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : state?.calibration_status === "step2" ? (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 text-xs animate-pulse font-medium">
+                <Target className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Now click <strong>BOTTOM-RIGHT</strong> corner</span>
+                <button
+                  type="button"
+                  onClick={() => ws.current?.send("cancel_calibration")}
+                  className="ml-1 text-slate-400 hover:text-white underline cursor-pointer text-[11px]"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : state?.is_calibrated ? (
+              <div className="flex items-center gap-1.5 bg-slate-900/80 border border-slate-800 rounded-xl p-1 text-xs">
+                <span className="flex items-center gap-1 text-[11px] text-emerald-400 font-semibold bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-lg">
+                  <CheckCircle2 className="w-3 h-3" />
+                  Calibrated
+                </span>
+                <button
+                  type="button"
+                  onClick={() => ws.current?.send("reset_calibration")}
+                  title="Reset to automatic screen detection"
+                  className="text-slate-400 hover:text-slate-200 px-2 py-0.5 rounded-lg text-xs hover:bg-slate-800/80 cursor-pointer transition-colors"
+                >
+                  Auto
+                </button>
+                <button
+                  type="button"
+                  onClick={() => ws.current?.send("start_calibration")}
+                  title="Re-calibrate board position"
+                  className="text-indigo-400 hover:text-indigo-300 px-2 py-0.5 rounded-lg text-xs hover:bg-indigo-500/10 cursor-pointer transition-colors"
+                >
+                  Re-Calibrate
+                </button>
+              </div>
+            ) : (
               <button
                 type="button"
-                onClick={() => ws.current?.send("set_scan_region:full")}
-                title="Scan all monitors / full desktop"
-                className={`px-2 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                  (state?.scan_region || 'full') === 'full'
-                    ? 'bg-slate-700 text-white font-semibold shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
+                onClick={() => ws.current?.send("start_calibration")}
+                title="Manually calibrate the board by clicking top-left and bottom-right corners"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer border border-slate-700 hover:border-indigo-500/50 hover:bg-indigo-500/10 text-slate-300 hover:text-indigo-300"
               >
-                Full
+                <Target className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Calibrate</span>
               </button>
-              <button
-                type="button"
-                onClick={() => ws.current?.send("set_scan_region:left_half")}
-                title="Scan left half of screen (ideal for split-screen with 2048 on left)"
-                className={`px-2 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                  state?.scan_region === 'left_half'
-                    ? 'bg-indigo-600 text-white font-semibold shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                Left 1/2
-              </button>
-              <button
-                type="button"
-                onClick={() => ws.current?.send("set_scan_region:right_half")}
-                title="Scan right half of screen"
-                className={`px-2 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                  state?.scan_region === 'right_half'
-                    ? 'bg-indigo-600 text-white font-semibold shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                Right 1/2
-              </button>
-            </div>
+            )}
           </div>
           
           <button 

@@ -10,7 +10,7 @@ class BoardScanner:
     def __init__(self):
         self.sct = mss.mss()
         self.board_bbox: Optional[dict] = None
-        self.scan_region: str = "full"  # "full", "left_half", "right_half"
+        self.manual_calibrated: bool = False
         
         # Color definitions for 2048 tiles (standard colors)
         # Using BGR format for OpenCV
@@ -30,12 +30,17 @@ class BoardScanner:
             2048: (46, 194, 237)
         }
 
-    def set_scan_region(self, region: str):
-        """Sets the active search region and invalidates the cached board location."""
-        if region in ("full", "left_half", "right_half"):
-            self.scan_region = region
-            self.board_bbox = None
-            logger.info(f"Scanner region configured to: {region}")
+    def set_manual_bbox(self, bbox: dict):
+        """Sets an exact user-calibrated bounding box and locks it."""
+        self.board_bbox = bbox
+        self.manual_calibrated = True
+        logger.info(f"Manual board calibration applied: {self.board_bbox}")
+
+    def reset_calibration(self):
+        """Resets manual calibration and reverts to auto-detection."""
+        self.manual_calibrated = False
+        self.board_bbox = None
+        logger.info("Board calibration reset to automatic detection.")
 
     def capture_screen(self) -> np.ndarray:
         # monitor[0] captures ALL monitors, so it works no matter which screen the game is on
@@ -48,21 +53,13 @@ class BoardScanner:
     def find_board(self, img: np.ndarray) -> bool:
         """
         Attempts to locate the 2048 game board on screen.
-        Scans all contours for a large square-ish shape.
-        Restricts search bounds when split-screen region is selected.
+        If the board was manually calibrated, preserves the calibrated bounding box.
+        Otherwise scans contours, prioritizing candidates containing the 2048 board background color.
         """
-        offset_x = 0
-        search_img = img
-        h_full, w_full = img.shape[:2]
+        if self.manual_calibrated and self.board_bbox is not None:
+            return True
 
-        if self.scan_region == "left_half":
-            search_img = img[:, :w_full // 2]
-            offset_x = 0
-        elif self.scan_region == "right_half":
-            search_img = img[:, w_full // 2:]
-            offset_x = w_full // 2
-
-        gray = cv2.cvtColor(search_img, cv2.COLOR_BGR2GRAY)
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         blur = cv2.GaussianBlur(gray, (5, 5), 0)
         edges = cv2.Canny(blur, 50, 150)
         
@@ -71,21 +68,35 @@ class BoardScanner:
         
         best_board = None
         max_area = 0
+        best_color_board = None
+        best_color_area = 0
 
         for cnt in contours:
             approx = cv2.approxPolyDP(cnt, 0.05 * cv2.arcLength(cnt, True), True)
             if len(approx) == 4:
                 x, y, w, h = cv2.boundingRect(approx)
                 area = w * h
-                # Check aspect ratio (square) and minimum size (relaxed to 180px for snapped half-screen windows)
+                # Check aspect ratio (square) and minimum size (relaxed to 180px for scaled windows)
                 if 0.85 < w / h < 1.15 and w > 180:
+                    crop = img[y:y+h, x:x+w]
+                    # Check for 2048 grid background (#bbada0) and tile tones:
+                    # B: 135-200, G: 150-215, R: 165-230
+                    mask = cv2.inRange(crop, np.array([135, 150, 165]), np.array([200, 215, 230]))
+                    match_ratio = np.count_nonzero(mask) / float(area) if area > 0 else 0
+                    
+                    if match_ratio > 0.15:
+                        if area > best_color_area:
+                            best_color_area = area
+                            best_color_board = {"top": y, "left": x, "width": w, "height": h}
+
                     if area > max_area:
                         max_area = area
-                        best_board = {"top": y, "left": x + offset_x, "width": w, "height": h}
+                        best_board = {"top": y, "left": x, "width": w, "height": h}
                         
-        if best_board:
-            self.board_bbox = best_board
-            logger.info(f"Found board at {self.board_bbox} (region: {self.scan_region})")
+        selected_board = best_color_board or best_board
+        if selected_board:
+            self.board_bbox = selected_board
+            logger.info(f"Found board at {self.board_bbox} (color_matched: {best_color_board is not None})")
             return True
             
         return False
