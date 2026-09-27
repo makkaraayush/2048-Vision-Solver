@@ -118,6 +118,20 @@ def save_weights(gradient_weights: List[float], weight_gradient: float, weight_e
     except Exception as e:
         logger.error(f"Failed to save weights to {path}: {e}")
 
+def delete_saved_weights() -> bool:
+    """Deletes best_weights.json and resets active heuristics back to default baseline."""
+    path = get_weights_path()
+    deleted = False
+    if os.path.exists(path):
+        try:
+            os.remove(path)
+            deleted = True
+            logger.info(f"Successfully deleted champion weights from {path}")
+        except Exception as e:
+            logger.error(f"Failed to delete {path}: {e}")
+    apply_default_weights()
+    return deleted
+
 # Startup: keep default weights active initially unless champion exists
 apply_default_weights()
 

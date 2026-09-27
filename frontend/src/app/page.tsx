@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Activity, Cpu, Clock, Zap, Target, 
   ArrowUp, ArrowDown, ArrowLeft, ArrowRight, 
-  Play, Square, Sparkles, Trophy, RefreshCw, Flame, CheckCircle2
+  Play, Square, Sparkles, Trophy, RefreshCw, Flame, CheckCircle2, RotateCcw, Trash2
 } from "lucide-react";
 
 interface SolverStats {
@@ -398,6 +398,22 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-3">
+            {state?.has_champion && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm("Reset evolved champion and return to default starter weights? This will delete best_weights.json.")) {
+                    ws.current?.send("reset_weights");
+                  }
+                }}
+                title="Delete saved champion weights and reset to default starter model"
+                className="flex items-center gap-1.5 p-2.5 px-3.5 rounded-xl font-semibold text-xs transition-all cursor-pointer border bg-red-500/10 hover:bg-red-500/20 border-red-500/30 text-red-400 hover:border-red-500/50"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Reset Champion</span>
+              </button>
+            )}
+
             <button
               onClick={() => ws.current?.send("toggle_training")}
               className={`flex items-center gap-2 p-2.5 px-5 rounded-xl font-semibold text-sm transition-all cursor-pointer border ${isTraining ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-[0_0_20px_rgba(245,158,11,0.2)]' : 'bg-slate-800/80 hover:bg-slate-800 border-slate-700 text-slate-200'}`}

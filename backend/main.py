@@ -164,6 +164,24 @@ async def websocket_endpoint(websocket: WebSocket):
                     logger.info("Stopping background evolutionary training...")
                     stop_training()
                 await broadcast_state()
+            elif data in ("reset_weights", "delete_weights"):
+                logger.info("Reset champion weights requested via Web UI.")
+                heur.delete_saved_weights()
+                state["active_model"] = "default"
+                state["has_champion"] = False
+                state["champion_meta"] = {}
+                state["training_stats"] = {
+                    "generation": 0,
+                    "level": 1,
+                    "best_max_tile": 0,
+                    "best_score": 0,
+                    "current_max_tile": 0,
+                    "current_score": 0,
+                    "games_played": 0,
+                    "status": "Ready to Train"
+                }
+                logger.info("Champion weights reset to default starter baseline.")
+                await broadcast_state()
             elif data == "shutdown":
                 logger.info("Shutdown requested via Web UI. Exiting...")
                 stop_training()

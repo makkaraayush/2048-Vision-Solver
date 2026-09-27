@@ -8,3 +8,4 @@ build/
 dist/
 *.log
 Assets/Raw/
+backend/best_weights.json
