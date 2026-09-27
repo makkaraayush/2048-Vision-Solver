@@ -205,6 +205,9 @@ npm run dev
 
 1. Open [play2048.co](https://play2048.co) in your browser.
 2. Keep the 2048 board visible on your screen.
+   > **💡 Display Setup Tips**:
+   > - **Multiple Monitors**: If you use multiple displays and the scanner does not lock onto the board, move your 2048 browser window to your **primary (main) display**.
+   > - **Single Monitor**: Use Windows Snap to arrange the windows side-by-side: snap the 2048 game to the left half (<kbd>Win</kbd> + <kbd>←</kbd>) and the CodeD3mon Dashboard to the right half (<kbd>Win</kbd> + <kbd>→</kbd>). This ensures OpenCV has full pixel visibility of the board while keeping your live telemetry dashboard visible without overlapping.
 3. Open the **CodeD3mon Dashboard** at `http://localhost:3000`.
 4. Click **Scanner Off** $\rightarrow$ **Scanner Active**. The live board will appear in the **Vision Matrix** panel with calculated hints.
 5. **To Enable Autonomous Play**:
