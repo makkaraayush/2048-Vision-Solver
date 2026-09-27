@@ -63,7 +63,8 @@ const TILE_COLORS: Record<number, string> = {
   512: "bg-amber-600 text-slate-900 shadow-[0_0_35px_rgba(217,119,6,0.8)] font-bold",
   1024: "bg-yellow-400 text-slate-900 shadow-[0_0_40px_rgba(250,204,21,0.9)] text-3xl font-extrabold",
   2048: "bg-yellow-500 text-slate-900 shadow-[0_0_50px_rgba(234,179,8,1)] text-3xl font-black ring-4 ring-yellow-300/50",
-  4096: "bg-purple-600 text-white shadow-[0_0_50px_rgba(168,85,247,0.9)] text-3xl font-black ring-4 ring-purple-400/50"
+  4096: "bg-purple-600 text-white shadow-[0_0_50px_rgba(168,85,247,0.9)] text-3xl font-black ring-4 ring-purple-400/50",
+  8192: "bg-emerald-600 text-white shadow-[0_0_50px_rgba(16,185,129,0.9)] text-3xl font-black ring-4 ring-emerald-400/50"
 };
 
 const LEVEL_NAMES: Record<number, string> = {

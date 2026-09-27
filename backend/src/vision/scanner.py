@@ -28,7 +28,9 @@ class BoardScanner:
             256: (97, 204, 237),
             512: (80, 200, 237),
             1024: (61, 197, 237),
-            2048: (46, 194, 237)
+            2048: (46, 194, 237),
+            4096: (48, 54, 61),  # Dark charcoal / super tile (#3c3a32)
+            8192: (48, 54, 61)   # Super tile (#3c3a32) with topological digit validation
         }
 
     def set_manual_bbox(self, bbox: dict):
@@ -168,6 +170,60 @@ class BoardScanner:
                 min_dist = dist
                 best_val = val
                 
+        b, g, r = float(bg_color[0]), float(bg_color[1]), float(bg_color[2])
+
+        # Super-tile family (4096, 8192, 16384+)
+        # In official 2048, all tiles >= 4096 (.tile-super) share the dark charcoal/blackish-brown
+        # background (#3c3a32, BGR ~(48, 54, 61)) with high-contrast white text (#f9f6f2).
+        # We disambiguate using topological digit and hole extraction (RETR_CCOMP):
+        # - 4096: 4 digits, '4' has 1 hole, '0' has 1 hole, '9' has 1 hole, '6' has 1 hole (total 4 holes; first digit 1 hole)
+        # - 8192: 4 digits, '8' has 2 holes, '1' has 0 holes, '9' has 1 hole, '2' has 0 holes (total 3 holes; first digit 2 holes)
+        # - 16384+: 5 digits
+        if best_val in (4096, 8192) or (r < 95 and g < 90 and b < 80):
+            roi = cell_img[int(h * 0.20):int(h * 0.80), int(w * 0.05):int(w * 0.95)]
+            gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+            _, bin_mask = cv2.threshold(gray, 140, 255, cv2.THRESH_BINARY)
+            cnts, hierarchy = cv2.findContours(bin_mask, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+            
+            min_hole = max(4.0, (h * w) * 0.0010)
+            min_digit = max(8.0, (h * w) * 0.0018)
+            
+            external_indices = []
+            digit_holes = {}
+            
+            if hierarchy is not None:
+                for i, h_info in enumerate(hierarchy[0]):
+                    if h_info[3] == -1: # external contour = digit
+                        if cv2.contourArea(cnts[i]) >= min_digit:
+                            external_indices.append(i)
+                            digit_holes[i] = 0
+                            
+                for i, h_info in enumerate(hierarchy[0]):
+                    parent = h_info[3]
+                    if parent in digit_holes: # child contour = hole inside digit
+                        if cv2.contourArea(cnts[i]) >= min_hole:
+                            digit_holes[parent] += 1
+                            
+            sorted_digits = sorted(external_indices, key=lambda idx: cv2.boundingRect(cnts[idx])[0])
+            num_digits = len(sorted_digits)
+            
+            if num_digits == 4:
+                first_digit_holes = digit_holes.get(sorted_digits[0], 0)
+                if first_digit_holes >= 2:
+                    return 8192
+                else:
+                    return 4096
+            elif num_digits == 5:
+                first_box = cv2.boundingRect(cnts[sorted_digits[0]])
+                if first_box[2] / float(max(first_box[3], 1)) < 0.55:
+                    return 16384
+                first_digit_holes = digit_holes.get(sorted_digits[0], 0)
+                if first_digit_holes >= 1:
+                    return 65536
+                return 32768
+            else:
+                return 4096
+
         # Yellow family disambiguation (128, 256, 512, 1024, 2048)
         # In 2048, yellow/gold tiles share similar hues.
         # We use high-contrast Blue-channel white text extraction combined with
