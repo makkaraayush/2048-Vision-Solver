@@ -12,6 +12,7 @@ import src.ai.heuristics as heur
 from pynput import keyboard
 import threading
 import os
+from typing import Optional
 
 from contextlib import asynccontextmanager
 
