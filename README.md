@@ -247,12 +247,29 @@ npm run dev
 │   └── package.json             # Next.js & UI dependencies
 ├── launcher.py                  # Multi-process orchestrator for one-click boot
 ├── start.bat                    # Windows startup batch file
+├── logs/
+│   └── test_runs/               # Autonomous test session logs, metrics & timelapses
+│       ├── test_01_baseline_default/
+│       └── README.md            # Benchmark progression tracker
 └── README.md
 ```
 
 ---
 
-## Benchmarks & Performance Summary
+## 📊 Benchmarks & Empirical Testing Logs
+
+Comprehensive verification logs, gameplay timelapses, and post-mortem analyses from live autonomous test sessions are documented in the [`logs/test_runs/`](logs/test_runs/) directory.
+
+### Live Hardware-in-the-Loop Test Runs
+
+| Run ID | Configuration | Max Tile | Score | Moves | Full Report & Video |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **[Test #1](logs/test_runs/test_01_baseline_default/)** | **Default Baseline Heuristics** (`DEFAULT_GRADIENT_WEIGHTS`) | **1024** | **12,120** | 708 | [View Report & Timelapse 📹](logs/test_runs/test_01_baseline_default/) |
+| **Test #2** | **Evolved Champion Gen 50+** (`best_weights.json`) | *Target: 2048+* | *TBD* | *TBD* | *In Progress* |
+
+> 📁 **Browse All Logs & Video Recordings**: Explore the complete testing history, observations, and model progression in [**`logs/test_runs/`**](logs/test_runs/).
+
+### Engine Performance Metrics
 
 | Metric | Measured Value | Notes |
 | :--- | :--- | :--- |
